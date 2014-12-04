@@ -3,5 +3,12 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
-
+	 <!-- 下拉菜单属性 -->
+    <dimen name="submenu_item_ll_height">48dp</dimen>
+    <color name="submenu_item_tv_color">#3d3d3d</color>
+    <dimen name="submenu_item_tv_size">18dp</dimen>
+    <dimen name="submenu_margin_top">15dp</dimen>
+    <dimen name="submenu_tv_titile">19dp</dimen>
+    
+    <color name="submenu_title_color">#17b2b0</color>
 </resources>

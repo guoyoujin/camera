@@ -3,7 +3,14 @@ package com.ryantang.picture;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -18,10 +25,15 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Message;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	
@@ -31,11 +43,20 @@ public class MainActivity extends Activity {
 	private static final int CROP_PICTURE = 3;
 	private static final int SCALE = 5;//照片缩小比例
 	private ImageView iv_image = null;	
+	private AlertDialog alertDialog;
+	public AlertDialotgDao alertDialotgDao = new AlertDialotgDao();
+	PhotoDaoImpl photoDaoImpl;
+	public List<String> list = new ArrayList<String>();
+	Uri selectedImageUri;
+	private int i=0;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		setTitle("Demo作者：@guoyoujin");		
+		initData();
+		photoDaoImpl = PhotoDaoImpl
+				.getInstance(MainActivity.this);
 		iv_image = (ImageView) this.findViewById(R.id.img);
 		iv_image.setOnClickListener(new OnClickListener() {
 			
@@ -50,6 +71,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				//即拍即显示
+				i=1;
 				showPicturePicker(MainActivity.this,false);
 			}
 		});		
@@ -57,14 +79,51 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				//截图后显示
+				i=1;
 				showPicturePicker(MainActivity.this,true);
 			}
 		});
+		this.findViewById(R.id.button1).setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				i=5;
+				alertDialog = alertDialotgDao.addViewtSelectItem(
+						MainActivity.this, "添加照片", "取消", list,
+						itemClickListener, null);
+				alertDialog.show();
+			}
+		});
 	}
+	OnItemClickListener itemClickListener = new OnItemClickListener() {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position,
+				long id) {
+			// TODO Auto-generated method stub
+			if (alertDialog != null && alertDialog.isShowing()) {
+				alertDialog.dismiss();
+			}
+			// 相机
+			if (position == 0) {
+//				openCamare();
+				
+				startActivityForResult(photoDaoImpl.openImageCaptuer(),
+						photoDaoImpl.SYSTEM_CAMERA_REQUESTCODE);
+			} else {// 相册
+				//openSelect();
+				
+				startActivityForResult(photoDaoImpl.openPictures(),
+						photoDaoImpl.PICTURE);
+			}
 
+		}
+	};
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
+		if(i<5){
 		if (resultCode == RESULT_OK) {
 			switch (requestCode) {
 			case TAKE_PICTURE:
@@ -131,6 +190,48 @@ public class MainActivity extends Activity {
 			default:
 				break;
 			}
+		}}else{
+		if (resultCode == RESULT_OK) {
+			Bitmap bitmap=null;
+			if (requestCode == photoDaoImpl.SYSTEM_CAMERA_REQUESTCODE) {
+				selectedImageUri=photoDaoImpl.getImageFileUri();
+				Log.i("TAG", selectedImageUri.toString());
+				BitmapFactory.Options options = new BitmapFactory.Options();  
+				options.inSampleSize = 2;//图片大小，设置越大，图片越不清晰，占用空间越小  
+				ContentResolver cr = this.getContentResolver(); 
+			    try {
+					bitmap = BitmapFactory.decodeStream(cr.openInputStream(selectedImageUri), null, options);
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}  
+				
+				//img_doctor_photos.setImageBitmap(bitmap);
+				
+			} else if (requestCode == photoDaoImpl.PICTURE) {
+				selectedImageUri = data.getData();
+				photoDaoImpl.setImageFileUri(selectedImageUri);
+				BitmapFactory.Options options = new BitmapFactory.Options();  
+				options.inSampleSize = 2;//图片大小，设置越大，图片越不清晰，占用空间越小  
+				ContentResolver cr = this.getContentResolver(); 
+			    try {
+					bitmap = BitmapFactory.decodeStream(cr.openInputStream(selectedImageUri), null, options);
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}  
+
+			}
+			if(bitmap!=null){
+				try {
+					saveBitmap(bitmap);
+					iv_image.setImageBitmap(bitmap);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		}
 	}
 	
@@ -202,6 +303,77 @@ public class MainActivity extends Activity {
         intent.putExtra("return-data", true);  
 	    startActivityForResult(intent, requestCode);
 	}
+	/**
+	 * 初始化控件
+	 */
+	private void initData() {
+		list.add("拍照");
+		list.add("从相册选择");
+	}
+	public void saveBitmap(Bitmap bitmap) throws IOException
+    {
+			bitmap=ImageTools.comp(bitmap);
+			String savePath = "";
+			// 判断是否挂载了SD卡
+			String storageState = Environment.getExternalStorageState();
+			if (storageState.equals(Environment.MEDIA_MOUNTED)) {
+				savePath = Environment.getExternalStorageDirectory()
+						.getAbsolutePath() + "/TongXin/Camera/";// 存放照片的文件夹
+				File savedir = new File(savePath);
+				if (!savedir.exists()) {
+					savedir.mkdirs();
+				}
+			}
+	
+			// 没有挂载SD卡，无法保存文件
+			if (StringUtils.isBlank(savePath)) {
+				Toast.makeText(MainActivity.this,
+						"无法保存照片，请检查SD卡是否挂载",Toast.LENGTH_SHORT).show();
+				return;
+			}
+			String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss")
+			.format(new Date());
+			String fileName = "tingxin_" + timeStamp + ".jpg";// 照片命名
+			File f = new File(savePath, fileName);
+			File file = new File(savePath);
+			compressBmpToFile(bitmap, f);
+//            FileOutputStream out;
+//            try{
+//                    out = new FileOutputStream(f);
+//                    if(bitmap.compress(Bitmap.CompressFormat.JPEG,80, out)) 
+//                    {
+//                            out.flush();
+//                            out.close();
+//                    }
+//            } 
+//            catch (FileNotFoundException e) 
+//            {
+//                    e.printStackTrace();
+//            } 
+//            catch (IOException e) 
+//            {
+//                    e.printStackTrace(); 
+//            }
+    }
+	public static void compressBmpToFile(Bitmap bmp,File file){  
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();  
+        int options = 80;//个人喜欢从80开始,  
+        bmp.compress(Bitmap.CompressFormat.JPEG, options, baos);  
+        while (baos.toByteArray().length / 1024 > 100) {   
+            baos.reset();  
+            options -= 10;  
+            bmp.compress(Bitmap.CompressFormat.JPEG, options, baos);  
+        }  
+        try {  
+            FileOutputStream fos = new FileOutputStream(file);  
+            fos.write(baos.toByteArray());  
+            fos.flush();  
+            fos.close();  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        }  
+    } 
+	
 	
 	
 }

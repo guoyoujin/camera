@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/FrameLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff"
+    android:orientation="vertical" >
+    
+    <LinearLayout
+        android:id="@+id/submenu_item_ll"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/submenu_item_ll_height"
+        android:background="@drawable/lines_click"
+        android:gravity="center_vertical"
+        android:orientation="vertical" >
+        <TextView
+            android:id="@+id/alertdialogselect_tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:text="标题"
+            android:textColor="@color/tabcolor"
+            android:textSize="@dimen/submenu_tv_titile" />
+    </LinearLayout>
+	<LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:background="@color/clicklines"
+        android:orientation="horizontal" >
+    </LinearLayout>
+    <ListView
+        android:id="@+id/alertdialogselect_listView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@color/lines"
+        android:dividerHeight="0.5dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:scrollbars="none"
+        />
+
+</LinearLayout>
